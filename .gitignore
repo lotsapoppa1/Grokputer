@@ -1,0 +1,75 @@
+# ─── Python bytecode & cache ───────────────────────────────────────────────
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ─── Build / distribution artifacts ────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+.Python
+
+# ─── Virtual environments ───────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ─── Environment / secrets files ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── IDE & editor files ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ─── OS-generated files ─────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Project-specific: credentials & user config ────────────────────────────
+scarlett_config.json
+
+# ─── Project-specific: brain database ───────────────────────────────────────
+brain/brain.db
+brain/*.db
+
+# ─── Log files ───────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Generated scripts (keep directory via .gitkeep) ────────────────────────
+code_gen/scripts/*.py
+!code_gen/scripts/.gitkeep
+
+# ─── Temporary session & scratch data ───────────────────────────────────────
+sessions/
+tmp/
+temp/
+*.tmp
+
+# ─── Media / download directories ────────────────────────────────────────────
+screenshots/
+downloads/
+uploads/
