@@ -1,0 +1,36 @@
+{
+  "name": "Scarlett",
+  "email": "lotsapoppa1@proton.me",
+  "proton_password": "YOUR_PASSWORD_HERE",
+  "smtp_host": "localhost",
+  "smtp_port": 1025,
+  "imap_host": "localhost",
+  "imap_port": 1143,
+  "swarm": {
+    "max_agents": 10,
+    "agent_timeout": 300
+  },
+  "brain": {
+    "auto_learn": true,
+    "pattern_detection": true,
+    "db_path": "brain/brain.db"
+  },
+  "notifications": {
+    "email_enabled": true,
+    "desktop_enabled": true,
+    "digest_frequency": "daily"
+  },
+  "web_monitor": {
+    "check_interval": 300,
+    "max_monitors": 20
+  },
+  "code_gen": {
+    "auto_execute": false,
+    "sandbox_timeout": 60,
+    "require_approval": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "grokputer.log"
+  }
+}
