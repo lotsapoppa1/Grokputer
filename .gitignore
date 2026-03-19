@@ -1,0 +1,47 @@
+# Sensitive config - NEVER commit this
+scarlett_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Logs (optional - keep these out of repo)
+*.log
+scarlett.log
+scarlett_memory.json
+
+# Screenshots directory (optional - generated at runtime)
+screenshots/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Selenium / browser drivers
+chromedriver
+geckodriver
+
+# PDF output
+*.pdf

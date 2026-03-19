@@ -1,0 +1,37 @@
+# Core AI / API
+openai>=1.0.0
+
+# System monitoring
+psutil>=5.9.0
+
+# PDF tools
+PyPDF2>=3.0.0
+reportlab>=4.0.0
+
+# Web scraping
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+lxml>=4.9.0
+
+# Browser automation
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# Screenshots
+Pillow>=10.0.0
+# Optional: pytesseract for OCR (requires tesseract-ocr system package)
+# pytesseract>=0.3.10
+
+# Database (sqlite3 is built-in)
+# No extra package required
+
+# Email (smtplib and imaplib are built-in)
+# No extra package required
+
+# GitHub (optional)
+PyGithub>=1.59.0
+GitPython>=3.1.40
+
+# NLP helper for natural language DB queries (lightweight)
+# Optional: uncomment if you want better NL→SQL
+# sqlalchemy>=2.0.0

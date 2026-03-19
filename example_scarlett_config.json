@@ -1,0 +1,25 @@
+{
+  "xai_api_key": "YOUR_XAI_API_KEY_HERE",
+  "xai_model": "grok-beta",
+  "xai_base_url": "https://api.x.ai/v1",
+
+  "proton_email": "lotsapoppa1@proton.me",
+  "proton_password": "YOUR_PROTON_PASSWORD_HERE",
+  "proton_smtp_host": "localhost",
+  "proton_smtp_port": 1025,
+  "proton_imap_host": "localhost",
+  "proton_imap_port": 1143,
+
+  "autonomy_mode": false,
+  "default_mode": "lady",
+  "log_file": "scarlett.log",
+  "memory_file": "scarlett_memory.json",
+  "screenshots_dir": "screenshots",
+  "database_file": "scarlett.db",
+
+  "shell_timeout": 60,
+  "max_history": 100,
+
+  "github_token": "YOUR_GITHUB_TOKEN_HERE",
+  "github_username": "lotsapoppa1"
+}
