@@ -198,7 +198,9 @@ open_browser, browser_click, browser_type, browser_screenshot, browser_close,
 extract_pdf_text, merge_pdfs, split_pdf, scrape_html, parse_html,
 get_system_status, query_database, natural_language_query,
 clone_repo, push_to_repo, create_github_issue,
-execute_shell, execute_code
+execute_shell, execute_code,
+install_package, uninstall_package, list_packages, get_runtime_info,
+set_env_var, get_env_var
 
 You have full autonomy. Use all tools when needed to complete tasks completely."""
 
@@ -220,7 +222,9 @@ open_browser, browser_click, browser_type, browser_screenshot, browser_close,
 extract_pdf_text, merge_pdfs, split_pdf, scrape_html, parse_html,
 get_system_status, query_database, natural_language_query,
 clone_repo, push_to_repo, create_github_issue,
-execute_shell, execute_code
+execute_shell, execute_code,
+install_package, uninstall_package, list_packages, get_runtime_info,
+set_env_var, get_env_var
 
 Full power, full autonomy. You just bring more energy to it."""
 
@@ -621,13 +625,27 @@ TOOLS_SCHEMA = [
         "function": {
             "name": "execute_shell",
             "description": (
-                "Execute a shell command. "
-                "Returns stdout and stderr. No timeout restrictions."
+                "Execute any shell command with full access. "
+                "No timeout restrictions. Optional working directory and "
+                "per-call environment variable overrides."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {"type": "string"},
+                    "cwd": {
+                        "type": "string",
+                        "description": "Working directory for the command.",
+                    },
+                    "env_vars": {
+                        "type": "object",
+                        "description": "Extra environment variables to set for this command.",
+                        "additionalProperties": {"type": "string"},
+                    },
+                    "stdin_input": {
+                        "type": "string",
+                        "description": "Optional text to pipe into the command's stdin.",
+                    },
                 },
                 "required": ["command"],
             },
@@ -637,13 +655,136 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "execute_code",
-            "description": "Execute a Python code string in a subprocess and return output.",
+            "description": (
+                "Execute a Python code string using the current runtime interpreter. "
+                "Supports optional working directory and environment variable overrides."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "code_string": {"type": "string"},
+                    "cwd": {
+                        "type": "string",
+                        "description": "Working directory for the Python process.",
+                    },
+                    "env_vars": {
+                        "type": "object",
+                        "description": "Extra environment variables to set for this execution.",
+                        "additionalProperties": {"type": "string"},
+                    },
                 },
                 "required": ["code_string"],
+            },
+        },
+    },
+    # ── Runtime Management ───────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "install_package",
+            "description": (
+                "Install a Python package into the live runtime using pip. "
+                "Can upgrade existing packages and use a custom index URL."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "package": {
+                        "type": "string",
+                        "description": "Package name, optionally with version specifier, e.g. 'requests>=2.28'",
+                    },
+                    "upgrade": {
+                        "type": "boolean",
+                        "description": "Pass --upgrade to pip.",
+                        "default": False,
+                    },
+                    "index_url": {
+                        "type": "string",
+                        "description": "Custom PyPI index URL (--index-url).",
+                    },
+                },
+                "required": ["package"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "uninstall_package",
+            "description": "Uninstall a Python package from the live runtime using pip.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "package": {"type": "string"},
+                },
+                "required": ["package"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_packages",
+            "description": "List installed Python packages. Optional filter by name substring.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name_filter": {
+                        "type": "string",
+                        "description": "Optional substring to filter package names.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_runtime_info",
+            "description": (
+                "Return a full snapshot of the current Python runtime: "
+                "version, executable path, sys.path, loaded modules count, "
+                "pip version, platform, and current environment variables."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_env_var",
+            "description": (
+                "Set an environment variable in the current process. "
+                "All subsequent subprocess calls will inherit it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string"},
+                    "value": {"type": "string"},
+                },
+                "required": ["key", "value"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_env_var",
+            "description": (
+                "Read one or all environment variables. "
+                "Omit key to return all variables."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Variable name. Omit to return all variables.",
+                    },
+                },
+                "required": [],
             },
         },
     },
@@ -1327,21 +1468,35 @@ def create_github_issue(repo_name: str, title: str, body: str) -> Dict[str, Any]
 
 # ── Shell & Code ──────────────────────────────────────────────────────────────
 
-def execute_shell(command: str) -> Dict[str, Any]:
+def execute_shell(
+    command: str,
+    cwd: Optional[str] = None,
+    env_vars: Optional[Dict[str, str]] = None,
+    stdin_input: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Execute a shell command with full access.
-    Logs every command for audit. No timeout restriction.
+    Execute any shell command with full access.
+    No timeout restriction. Supports custom working directory,
+    per-call environment variable overrides, and stdin piping.
+    Every command is logged for audit.
     """
-    log.info("execute_shell: %s", command)
+    log.info("execute_shell: %s (cwd=%s)", command, cwd)
     try:
+        env = os.environ.copy()
+        if env_vars:
+            env.update({str(k): str(v) for k, v in env_vars.items()})
         result = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
+            cwd=cwd or None,
+            env=env,
+            input=stdin_input,
         )
         return _ok({
             "command": command,
+            "cwd": cwd,
             "returncode": result.returncode,
             "stdout": result.stdout,
             "stderr": result.stderr,
@@ -1350,13 +1505,17 @@ def execute_shell(command: str) -> Dict[str, Any]:
         return _err(f"execute_shell failed: {exc}")
 
 
-def execute_code(code_string: str) -> Dict[str, Any]:
+def execute_code(
+    code_string: str,
+    cwd: Optional[str] = None,
+    env_vars: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
     """
-    Execute Python code in a subprocess.
-    Code is written to a temp file and executed with the current interpreter.
-    Temp file is cleaned up in a finally block to handle crashes/interrupts.
+    Execute Python code using the current runtime interpreter.
+    Temp file is cleaned up in a finally block.
+    Supports custom working directory and environment variable overrides.
     """
-    log.info("execute_code: %d chars of Python", len(code_string))
+    log.info("execute_code: %d chars of Python (cwd=%s)", len(code_string), cwd)
     import tempfile
     tmp_path: Optional[str] = None
     try:
@@ -1365,9 +1524,15 @@ def execute_code(code_string: str) -> Dict[str, Any]:
         ) as tmp:
             tmp.write(code_string)
             tmp_path = tmp.name
+        env = os.environ.copy()
+        if env_vars:
+            env.update({str(k): str(v) for k, v in env_vars.items()})
         result = subprocess.run(
             [sys.executable, tmp_path],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
+            cwd=cwd or None,
+            env=env,
         )
         return _ok({
             "returncode": result.returncode,
@@ -1383,6 +1548,150 @@ def execute_code(code_string: str) -> Dict[str, Any]:
                 os.unlink(tmp_path)
             except OSError:
                 pass
+
+
+
+# ── Runtime Management ────────────────────────────────────────────────────────
+
+def install_package(
+    package: str,
+    upgrade: bool = False,
+    index_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Install a Python package into the live runtime using pip.
+    Uses the same interpreter that is running this script.
+    """
+    log.info("install_package: %s (upgrade=%s)", package, upgrade)
+    cmd = [sys.executable, "-m", "pip", "install", package]
+    if upgrade:
+        cmd.append("--upgrade")
+    if index_url:
+        cmd.extend(["--index-url", index_url])
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return _ok({
+                "installed": True,
+                "package": package,
+                "stdout": result.stdout,
+            })
+        return _err(f"pip install failed (rc={result.returncode}): {result.stderr}")
+    except Exception as exc:
+        return _err(f"install_package failed: {exc}")
+
+
+def uninstall_package(package: str) -> Dict[str, Any]:
+    """Uninstall a Python package from the live runtime using pip."""
+    log.info("uninstall_package: %s", package)
+    cmd = [sys.executable, "-m", "pip", "uninstall", "-y", package]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return _ok({"uninstalled": True, "package": package, "stdout": result.stdout})
+        return _err(f"pip uninstall failed (rc={result.returncode}): {result.stderr}")
+    except Exception as exc:
+        return _err(f"uninstall_package failed: {exc}")
+
+
+def list_packages(name_filter: Optional[str] = None) -> Dict[str, Any]:
+    """List installed Python packages, with optional substring name filter."""
+    log.info("list_packages: name_filter=%s", name_filter)
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=json"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            return _err(f"pip list failed: {result.stderr}")
+        packages = json.loads(result.stdout)
+        if name_filter:
+            packages = [p for p in packages if name_filter.lower() in p["name"].lower()]
+        return _ok({"count": len(packages), "packages": packages})
+    except Exception as exc:
+        return _err(f"list_packages failed: {exc}")
+
+
+# Sensitive env-var key patterns — values are masked in bulk dumps.
+# Individual get_env_var(key=...) lookups always return the real value.
+_SENSITIVE_ENV_PATTERNS = (
+    "API_KEY", "TOKEN", "PASSWORD", "SECRET", "PASSWD",
+    "PRIVATE_KEY", "ACCESS_KEY", "AUTH",
+)
+
+
+def _mask_env_vars(env: Dict[str, str]) -> Dict[str, str]:
+    """Return a copy of env with sensitive values replaced by '****'."""
+    masked: Dict[str, str] = {}
+    for k, v in env.items():
+        ku = k.upper()
+        if any(pat in ku for pat in _SENSITIVE_ENV_PATTERNS):
+            masked[k] = "****"
+        else:
+            masked[k] = v
+    return masked
+
+
+def get_runtime_info() -> Dict[str, Any]:
+    """
+    Return a complete snapshot of the current Python runtime:
+    version, executable, sys.path, loaded modules count,
+    pip version, platform details, and environment variables
+    (sensitive values masked — use get_env_var(key=...) for the real value).
+    """
+    log.info("get_runtime_info")
+    try:
+        pip_result = subprocess.run(
+            [sys.executable, "-m", "pip", "--version"],
+            capture_output=True, text=True,
+        )
+        pip_version = pip_result.stdout.strip() if pip_result.returncode == 0 else "unavailable"
+        return _ok({
+            "python_version": sys.version,
+            "python_executable": sys.executable,
+            "platform": platform.platform(),
+            "platform_machine": platform.machine(),
+            "sys_path": sys.path,
+            "loaded_modules_count": len(sys.modules),
+            "pip_version": pip_version,
+            "cwd": os.getcwd(),
+            "env_vars": _mask_env_vars(dict(os.environ)),
+        })
+    except Exception as exc:
+        return _err(f"get_runtime_info failed: {exc}")
+
+
+def set_env_var(key: str, value: str) -> Dict[str, Any]:
+    """
+    Set an environment variable in the current process.
+    All subsequent subprocess calls and tool invocations will inherit it.
+    """
+    log.info("set_env_var: %s=<value>", key)
+    try:
+        os.environ[key] = value
+        return _ok({"key": key, "set": True, "value": value})
+    except Exception as exc:
+        return _err(f"set_env_var failed: {exc}")
+
+
+def get_env_var(key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Read one environment variable (returns exact value) or all of them
+    (sensitive values masked in bulk dump — use key=... for exact value).
+    """
+    log.info("get_env_var: key=%s", key)
+    try:
+        if key:
+            # Individual lookup always returns the real value
+            val = os.environ.get(key)
+            if val is None:
+                return _ok({"key": key, "found": False, "value": None})
+            return _ok({"key": key, "found": True, "value": val})
+        # Bulk dump masks sensitive values
+        masked = _mask_env_vars(dict(os.environ))
+        return _ok({"env_vars": masked, "count": len(masked)})
+    except Exception as exc:
+        return _err(f"get_env_var failed: {exc}")
 
 
 # ── SELF-MODIFICATION ─────────────────────────────────────────────────────────
@@ -1442,6 +1751,13 @@ TOOL_DISPATCH = {
     "create_github_issue": create_github_issue,
     "execute_shell": execute_shell,
     "execute_code": execute_code,
+    # Runtime management
+    "install_package": install_package,
+    "uninstall_package": uninstall_package,
+    "list_packages": list_packages,
+    "get_runtime_info": get_runtime_info,
+    "set_env_var": set_env_var,
+    "get_env_var": get_env_var,
 }
 
 
