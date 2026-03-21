@@ -23,6 +23,35 @@ Same tools and power — radically different energy. Switch at will.
 Switch commands: `be a lady` · `be a tramp` · `flip` · `toggle`
 Info commands: `persona` · `status` · `clear` · `quit`
 
+## Getting the files onto your computer (GitHub Desktop)
+
+The scripts live on the **`copilot/build-ultimate-scarlett-powerhouse`** branch.
+Two ways to get them locally:
+
+### Option 1 — Pull the PR branch directly (fastest)
+1. Open **GitHub Desktop**
+2. In the top bar click **Current Branch** → find and select
+   `copilot/build-ultimate-scarlett-powerhouse`
+3. Click **Fetch origin** (top right) — then **Pull origin** if it appears
+4. Your local folder now has `grokputer_hybrid.py` and
+   `grokputer_dual_personality.py` alongside the original `grokputer_main.py`
+
+### Option 2 — Merge the PR on GitHub first, then pull main
+1. Go to [github.com/lotsapoppa1/Grokputer/pulls](https://github.com/lotsapoppa1/Grokputer/pulls)
+2. Open the open PR and click **Merge pull request**
+3. Back in **GitHub Desktop**, make sure **Current Branch** is `main`
+4. Click **Fetch origin** → **Pull origin**
+5. Done — all three scripts are now on your `main` branch locally
+
+### Verifying the files are there
+After pulling, open the repo folder in Explorer/Finder and confirm you see:
+```
+grokputer_main.py              ← Version A (original)
+grokputer_hybrid.py            ← Version B (single persona)
+grokputer_dual_personality.py  ← Version C (dual personality)
+scarlett_config.json           ← fill this in with your keys
+```
+
 ## Quick Start
 
 ```bash
