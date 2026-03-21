@@ -14,6 +14,12 @@ build/
 scarlett.log
 scarlett.db
 memory.json
+scarlett_hybrid.log
+scarlett_hybrid.db
+memory_hybrid.json
+scarlett_dual.log
+scarlett_dual.db
+memory_dual.json
 email_drafts/
 screenshots/
 *.bak.*.py

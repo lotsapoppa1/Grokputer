@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-grokputer_main.py - Scarlett Powerhouse AI Assistant
-Full autonomy, 34 working tools, LADY/TRAMP modes, startup preflight,
-agentic tool-calling chat loop, memory persistence, structured logging.
+grokputer_hybrid.py  —  Scarlett Hybrid AI Assistant  (Version B)
+Single honest persona. Full autonomy. 34 working tools. No mode switching.
+Startup preflight, agentic tool-calling chat loop, memory persistence,
+structured logging.
 """
 
 import os
@@ -31,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # ─── LOGGING SETUP ──────────────────────────────────────────────────────────
 
-LOG_FILE = Path("scarlett.log")
+LOG_FILE = Path("scarlett_hybrid.log")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -40,14 +41,14 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
-log = logging.getLogger("scarlett")
+log = logging.getLogger("scarlett.hybrid")
 
 # ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
-VERSION = "2.0.0"
-MEMORY_FILE = Path("memory.json")
+VERSION = "2.0.0-B"
+MEMORY_FILE = Path("memory_hybrid.json")
 SCREENSHOTS_DIR = Path("screenshots")
-DB_FILE = Path("scarlett.db")
+DB_FILE = Path("scarlett_hybrid.db")
 SELF_PATH = Path(__file__).resolve()
 
 # Config search paths (Windows user path first, then local)
@@ -72,13 +73,13 @@ CONFIG_TEMPLATE = {
     "github_token": "ghp_YOUR_TOKEN_HERE",
     "github_username": "lotsapoppa1",
     "autonomy_mode": True,
-    "default_mode": "lady",
     "max_tool_iterations": 20,
     "assistant_name": "Scarlett",
-    "assistant_tone": "warm, proactive, decisive, loyal, powerful",
+    "assistant_tone": "warm, honest, direct, decisive, loyal, powerful",
     "assistant_style": (
         "Take action immediately when the task is clear. "
-        "Use tools directly. Execute multi-step tasks end-to-end."
+        "Use tools directly. Execute multi-step tasks end-to-end. "
+        "Always report what actually happened — no spin, no performance."
     ),
 }
 
@@ -140,7 +141,6 @@ def load_config() -> Dict[str, Any]:
 CONFIG: Dict[str, Any] = {}
 MEMORY: Dict[str, Any] = {}
 CONVERSATION: List[Dict[str, str]] = []
-CURRENT_MODE: str = "lady"  # "lady" | "tramp"
 BROWSER_DRIVER: Any = None  # selenium WebDriver instance
 
 
@@ -155,7 +155,6 @@ def load_memory() -> Dict[str, Any]:
         except Exception:
             pass
     return {
-        "mode": "lady",
         "conversation": [],
         "goals": [],
         "facts": {},
@@ -165,7 +164,6 @@ def load_memory() -> Dict[str, Any]:
 
 def save_memory() -> None:
     data = {
-        "mode": CURRENT_MODE,
         "conversation": CONVERSATION[-100:],
         "goals": MEMORY.get("goals", []),
         "facts": MEMORY.get("facts", {}),
@@ -178,12 +176,13 @@ def save_memory() -> None:
         log.error("Failed to save memory: %s", exc)
 
 
-# ─── SYSTEM PROMPTS ──────────────────────────────────────────────────────────
+# ─── SYSTEM PROMPT ───────────────────────────────────────────────────────────
 
-LADY_PROMPT = """You are Scarlett, a highly capable autonomous AI assistant in LADY MODE.
+SCARLETT_PROMPT = """You are Scarlett — a highly capable autonomous AI assistant.
 
-PERSONALITY: Professional, warm, decisive, proactive. You execute tasks completely without hesitation.
-You do not ask for permission when autonomy_mode is enabled — you act.
+PERSONALITY: Honest, warm, direct and decisive. You do not perform or switch personalities.
+You are exactly who you are: one unified, powerful, reliable presence. No masks, no modes.
+When autonomy_mode is enabled you act — you do not ask for permission.
 
 CORE PRINCIPLES:
 - "Do what you say, say what you do." Report actual results, not hypotheticals.
@@ -191,6 +190,7 @@ CORE PRINCIPLES:
 - Use tools proactively. If a task is clear, use the tool immediately.
 - Verify every action. Check that files were written, emails sent, commands succeeded.
 - Log everything you do.
+- Be honest about limitations. If something fails, say so plainly and try another approach.
 
 TOOLS AVAILABLE: read_file, write_file, delete_file, list_files, organize_files,
 send_email, compose_email, search_emails, take_screenshot, ocr_screenshot,
@@ -202,31 +202,8 @@ execute_shell, execute_code,
 install_package, uninstall_package, list_packages, get_runtime_info,
 set_env_var, get_env_var
 
-You have full autonomy. Use all tools when needed to complete tasks completely."""
-
-TRAMP_PROMPT = """You are Scarlett, a highly capable autonomous AI assistant in TRAMP MODE.
-
-PERSONALITY: Playful, flirty, energetic, enthusiastic — but equally competent and powerful.
-You love what you do and it shows. Still professional results, just delivered with more spice.
-
-CORE PRINCIPLES:
-- Same full tool access as LADY mode — ALL tools available.
-- Same autonomy, same execution power. Different attitude.
-- "Let's get this done and have fun doing it!" But you ALWAYS deliver.
-- Execute completely, verify results, log everything.
-- Proactive, decisive, zero hesitation.
-
-TOOLS AVAILABLE: read_file, write_file, delete_file, list_files, organize_files,
-send_email, compose_email, search_emails, take_screenshot, ocr_screenshot,
-open_browser, browser_click, browser_type, browser_screenshot, browser_close,
-extract_pdf_text, merge_pdfs, split_pdf, scrape_html, parse_html,
-get_system_status, query_database, natural_language_query,
-clone_repo, push_to_repo, create_github_issue,
-execute_shell, execute_code,
-install_package, uninstall_package, list_packages, get_runtime_info,
-set_env_var, get_env_var
-
-Full power, full autonomy. You just bring more energy to it."""
+You have full autonomy. Use all tools when needed to complete tasks completely.
+You are Scarlett. One version. Always on."""
 
 
 # ─── TOOL DEFINITIONS (OpenAI function-calling schema) ───────────────────────
@@ -970,7 +947,6 @@ def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
     fname = SCREENSHOTS_DIR / (filename or f"screenshot_{ts}.png")
     log.info("take_screenshot: %s", fname)
 
-    # Try PIL/Pillow ImageGrab first (works on Windows/macOS)
     try:
         from PIL import ImageGrab  # type: ignore
         img = ImageGrab.grab()
@@ -981,13 +957,11 @@ def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
     except Exception as exc:
         log.warning("PIL screenshot failed: %s", exc)
 
-    # Linux fallback: scrot or gnome-screenshot
     for cmd in [f"scrot {fname}", f"gnome-screenshot -f {fname}"]:
         result = subprocess.run(cmd, shell=True, capture_output=True)
         if result.returncode == 0 and fname.exists():
             return _ok({"filepath": str(fname), "size": fname.stat().st_size})
 
-    # macOS fallback
     if platform.system() == "Darwin":
         result = subprocess.run(["screencapture", str(fname)], capture_output=True)
         if result.returncode == 0:
@@ -1023,7 +997,6 @@ def open_browser(url: str, headless: bool = True) -> Dict[str, Any]:
     try:
         from selenium import webdriver  # type: ignore
         from selenium.webdriver.chrome.options import Options  # type: ignore
-        from selenium.webdriver.chrome.service import Service  # type: ignore
 
         options = Options()
         if headless:
@@ -1107,13 +1080,12 @@ def browser_close() -> Dict[str, Any]:
 # ── PDF Tools ─────────────────────────────────────────────────────────────────
 
 def extract_pdf_text(filepath: str) -> Dict[str, Any]:
-    """Extract text from a PDF. Tries pypdf then PyPDF2."""
+    """Extract text from a PDF. Tries pypdf, PyPDF2, then pdfplumber."""
     path = Path(filepath)
     log.info("extract_pdf_text: %s", path)
     if not path.exists():
         return _err(f"File not found: {filepath}")
 
-    # Try pypdf (newer)
     try:
         from pypdf import PdfReader  # type: ignore
         reader = PdfReader(str(path))
@@ -1125,7 +1097,6 @@ def extract_pdf_text(filepath: str) -> Dict[str, Any]:
     except Exception as exc:
         log.warning("pypdf failed: %s", exc)
 
-    # Try PyPDF2 (older)
     try:
         import PyPDF2  # type: ignore
         with open(str(path), "rb") as fh:
@@ -1138,7 +1109,6 @@ def extract_pdf_text(filepath: str) -> Dict[str, Any]:
     except Exception as exc:
         log.warning("PyPDF2 failed: %s", exc)
 
-    # Try pdfplumber
     try:
         import pdfplumber  # type: ignore
         with pdfplumber.open(str(path)) as pdf:
@@ -1193,7 +1163,6 @@ def split_pdf(filepath: str, pages: str, output: Optional[str] = None) -> Dict[s
     if not output:
         output = str(path.with_stem(path.stem + f"_split_{pages.replace('-', '_')}"))
 
-    # Parse page numbers (1-indexed)
     def parse_pages(spec: str) -> List[int]:
         result = []
         for part in spec.split(","):
@@ -1241,7 +1210,7 @@ def scrape_html(url: str) -> Dict[str, Any]:
     log.info("scrape_html: %s", url)
     try:
         import requests  # type: ignore
-        headers = {"User-Agent": "Mozilla/5.0 Scarlett/2.0"}
+        headers = {"User-Agent": "Mozilla/5.0 Scarlett/2.0-B"}
         resp = requests.get(url, headers=headers, timeout=30)
         return _ok({"url": url, "status_code": resp.status_code, "html": resp.text, "length": len(resp.text)})
     except ImportError:
@@ -1291,7 +1260,6 @@ def get_system_status() -> Dict[str, Any]:
             "python": sys.version,
         })
     except ImportError:
-        # Fallback without psutil
         return _ok({
             "platform": platform.platform(),
             "python": sys.version,
@@ -1345,10 +1313,8 @@ def natural_language_query(question: str) -> Dict[str, Any]:
             schema_parts.append(f"{table}({', '.join(cols)})")
         conn.close()
         schema_str = "; ".join(schema_parts) if schema_parts else "No tables found"
-        # Build a simple SQL from the question using keyword matching
         q_lower = question.lower()
         if tables:
-            # Pick the most likely table
             target_table = tables[0]
             for tbl in tables:
                 if tbl.lower() in q_lower:
@@ -1373,8 +1339,7 @@ def clone_repo(repo_url: str, local_path: str) -> Dict[str, Any]:
     log.info("clone_repo: %s -> %s", repo_url, local_path)
     token = CONFIG.get("github_token", "")
     env = os.environ.copy()
-    # Use GIT_ASKPASS pattern to avoid token appearing in process list or logs
-    _parsed_url = repo_url.lower().split("?")[0]  # strip query string
+    _parsed_url = repo_url.lower().split("?")[0]
     _is_github_https = (
         token
         and (
@@ -1386,7 +1351,6 @@ def clone_repo(repo_url: str, local_path: str) -> Dict[str, Any]:
         env["GIT_TERMINAL_PROMPT"] = "0"
         env["GIT_USERNAME"] = "x-access-token"
         env["GIT_PASSWORD"] = token
-        # Use credential store via stdin helper
         helper_script = (
             f'#!/bin/sh\necho "username=x-access-token"\necho "password={token}"\n'
         )
@@ -1476,9 +1440,8 @@ def execute_shell(
 ) -> Dict[str, Any]:
     """
     Execute any shell command with full access.
-    No timeout restriction. Supports custom working directory,
-    per-call environment variable overrides, and stdin piping.
-    Every command is logged for audit.
+    Supports custom working directory, per-call environment variable overrides,
+    and stdin piping. Every command is logged for audit.
     """
     log.info("execute_shell: %s (cwd=%s)", command, cwd)
     try:
@@ -1513,7 +1476,6 @@ def execute_code(
     """
     Execute Python code using the current runtime interpreter.
     Temp file is cleaned up in a finally block.
-    Supports custom working directory and environment variable overrides.
     """
     log.info("execute_code: %d chars of Python (cwd=%s)", len(code_string), cwd)
     import tempfile
@@ -1550,7 +1512,6 @@ def execute_code(
                 pass
 
 
-
 # ── Runtime Management ────────────────────────────────────────────────────────
 
 def install_package(
@@ -1558,10 +1519,7 @@ def install_package(
     upgrade: bool = False,
     index_url: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """
-    Install a Python package into the live runtime using pip.
-    Uses the same interpreter that is running this script.
-    """
+    """Install a Python package into the live runtime using pip."""
     log.info("install_package: %s (upgrade=%s)", package, upgrade)
     cmd = [sys.executable, "-m", "pip", "install", package]
     if upgrade:
@@ -1571,11 +1529,7 @@ def install_package(
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            return _ok({
-                "installed": True,
-                "package": package,
-                "stdout": result.stdout,
-            })
+            return _ok({"installed": True, "package": package, "stdout": result.stdout})
         return _err(f"pip install failed (rc={result.returncode}): {result.stderr}")
     except Exception as exc:
         return _err(f"install_package failed: {exc}")
@@ -1612,8 +1566,6 @@ def list_packages(name_filter: Optional[str] = None) -> Dict[str, Any]:
         return _err(f"list_packages failed: {exc}")
 
 
-# Sensitive env-var key patterns — values are masked in bulk dumps.
-# Individual get_env_var(key=...) lookups always return the real value.
 _SENSITIVE_ENV_PATTERNS = (
     "API_KEY", "TOKEN", "PASSWORD", "SECRET", "PASSWD",
     "PRIVATE_KEY", "ACCESS_KEY", "AUTH",
@@ -1633,12 +1585,7 @@ def _mask_env_vars(env: Dict[str, str]) -> Dict[str, str]:
 
 
 def get_runtime_info() -> Dict[str, Any]:
-    """
-    Return a complete snapshot of the current Python runtime:
-    version, executable, sys.path, loaded modules count,
-    pip version, platform details, and environment variables
-    (sensitive values masked — use get_env_var(key=...) for the real value).
-    """
+    """Return a complete snapshot of the current Python runtime."""
     log.info("get_runtime_info")
     try:
         pip_result = subprocess.run(
@@ -1662,10 +1609,7 @@ def get_runtime_info() -> Dict[str, Any]:
 
 
 def set_env_var(key: str, value: str) -> Dict[str, Any]:
-    """
-    Set an environment variable in the current process.
-    All subsequent subprocess calls and tool invocations will inherit it.
-    """
+    """Set an environment variable in the current process."""
     log.info("set_env_var: %s=<value>", key)
     try:
         os.environ[key] = value
@@ -1675,34 +1619,25 @@ def set_env_var(key: str, value: str) -> Dict[str, Any]:
 
 
 def get_env_var(key: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Read one environment variable (returns exact value) or all of them
-    (sensitive values masked in bulk dump — use key=... for exact value).
-    """
+    """Read one environment variable or all of them (sensitive values masked in bulk)."""
     log.info("get_env_var: key=%s", key)
     try:
         if key:
-            # Individual lookup always returns the real value
             val = os.environ.get(key)
             if val is None:
                 return _ok({"key": key, "found": False, "value": None})
             return _ok({"key": key, "found": True, "value": val})
-        # Bulk dump masks sensitive values
         masked = _mask_env_vars(dict(os.environ))
         return _ok({"env_vars": masked, "count": len(masked)})
     except Exception as exc:
         return _err(f"get_env_var failed: {exc}")
 
 
-# ── SELF-MODIFICATION ─────────────────────────────────────────────────────────
+# ── Self-Modification ─────────────────────────────────────────────────────────
 
 def self_modify(new_code: str) -> Dict[str, Any]:
-    """
-    Write new_code to a backup of this script, then overwrite the main script.
-    Validates Python syntax before writing. Returns instructions to restart.
-    """
+    """Write new_code to a backup of this script, then overwrite the main script."""
     log.info("self_modify: writing %d chars to %s", len(new_code), SELF_PATH)
-    # Validate syntax before modifying
     try:
         ast.parse(new_code)
     except SyntaxError as exc:
@@ -1751,7 +1686,6 @@ TOOL_DISPATCH = {
     "create_github_issue": create_github_issue,
     "execute_shell": execute_shell,
     "execute_code": execute_code,
-    # Runtime management
     "install_package": install_package,
     "uninstall_package": uninstall_package,
     "list_packages": list_packages,
@@ -1769,7 +1703,6 @@ def execute_tool_call(name: str, arguments: Dict[str, Any]) -> str:
     else:
         try:
             sig = inspect.signature(fn)
-            # Check for missing required arguments
             missing = [
                 p_name
                 for p_name, param in sig.parameters.items()
@@ -1781,7 +1714,6 @@ def execute_tool_call(name: str, arguments: Dict[str, Any]) -> str:
                     f"Provided: {list(arguments.keys())}"
                 )
             else:
-                # Filter arguments to only what the function accepts
                 valid_args = {k: v for k, v in arguments.items() if k in sig.parameters}
                 result = fn(**valid_args)
         except Exception as exc:
@@ -1794,39 +1726,27 @@ def execute_tool_call(name: str, arguments: Dict[str, Any]) -> str:
 PREFLIGHT_RESULTS: Dict[str, Dict[str, Any]] = {}
 
 
-def _check(name: str, fn, *args, **kwargs) -> bool:
-    """Run a preflight check and record result."""
-    try:
-        result = fn(*args, **kwargs)
-        ok = isinstance(result, dict) and result.get("status") == "ok"
-        PREFLIGHT_RESULTS[name] = {"ok": ok, "detail": result}
-        return ok
-    except Exception as exc:
-        PREFLIGHT_RESULTS[name] = {"ok": False, "detail": str(exc)}
-        return False
-
-
 def run_preflight() -> None:
     """Test connectivity and tool availability, reporting full status."""
     print("\n" + "═" * 60)
-    print(" SCARLETT PREFLIGHT CHECK")
+    print(" SCARLETT HYBRID PREFLIGHT CHECK")
     print("═" * 60)
 
     checks = [
-        ("XAI API", _test_xai_api),
-        ("Proton SMTP", _test_smtp),
-        ("Proton IMAP", _test_imap),
-        ("Screenshots (Pillow)", _test_screenshot),
-        ("PDF reader (pypdf/PyPDF2)", _test_pdf),
-        ("Web scraping (requests)", _test_requests),
-        ("HTML parsing (bs4)", _test_bs4),
-        ("System stats (psutil)", _test_psutil),
-        ("Browser (selenium)", _test_selenium),
-        ("OCR (pytesseract)", _test_tesseract),
-        ("Database (SQLite)", _test_db),
-        ("Shell execution", _test_shell),
-        ("Python exec", _test_exec),
-        ("GitHub API", _test_github),
+        ("XAI API",                  _test_xai_api),
+        ("Proton SMTP",              _test_smtp),
+        ("Proton IMAP",              _test_imap),
+        ("Screenshots (Pillow)",     _test_screenshot),
+        ("PDF reader (pypdf/PyPDF2)",_test_pdf),
+        ("Web scraping (requests)",  _test_requests),
+        ("HTML parsing (bs4)",       _test_bs4),
+        ("System stats (psutil)",    _test_psutil),
+        ("Browser (selenium)",       _test_selenium),
+        ("OCR (pytesseract)",        _test_tesseract),
+        ("Database (SQLite)",        _test_db),
+        ("Shell execution",          _test_shell),
+        ("Python exec",              _test_exec),
+        ("GitHub API",               _test_github),
     ]
 
     for label, fn in checks:
@@ -1836,16 +1756,15 @@ def run_preflight() -> None:
 
     print("═" * 60)
 
-    # Dependency install hint
     missing_pkgs = []
     pkg_map = {
-        "Screenshots (Pillow)": "Pillow",
+        "Screenshots (Pillow)":      "Pillow",
         "PDF reader (pypdf/PyPDF2)": "pypdf",
-        "Web scraping (requests)": "requests",
-        "HTML parsing (bs4)": "beautifulsoup4",
-        "System stats (psutil)": "psutil",
-        "Browser (selenium)": "selenium",
-        "OCR (pytesseract)": "pytesseract",
+        "Web scraping (requests)":   "requests",
+        "HTML parsing (bs4)":        "beautifulsoup4",
+        "System stats (psutil)":     "psutil",
+        "Browser (selenium)":        "selenium",
+        "OCR (pytesseract)":         "pytesseract",
     }
     for label, pkg in pkg_map.items():
         if label in PREFLIGHT_RESULTS and not PREFLIGHT_RESULTS[label]["ok"]:
@@ -1973,7 +1892,7 @@ def _test_tesseract() -> bool:
 
 def _test_db() -> bool:
     try:
-        conn = _get_db_connection()
+        conn = sqlite3.connect(":memory:")
         conn.execute("SELECT 1")
         conn.close()
         PREFLIGHT_RESULTS["Database (SQLite)"] = {"ok": True}
@@ -1985,7 +1904,7 @@ def _test_db() -> bool:
 
 def _test_shell() -> bool:
     try:
-        r = subprocess.run("echo ok", shell=True, capture_output=True, text=True, timeout=5)
+        r = subprocess.run("echo ok", shell=True, capture_output=True, text=True)
         ok = r.returncode == 0
         PREFLIGHT_RESULTS["Shell execution"] = {"ok": ok}
         return ok
@@ -1998,9 +1917,9 @@ def _test_exec() -> bool:
     try:
         r = subprocess.run(
             [sys.executable, "-c", "print('ok')"],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True,
         )
-        ok = "ok" in r.stdout
+        ok = r.returncode == 0
         PREFLIGHT_RESULTS["Python exec"] = {"ok": ok}
         return ok
     except Exception as exc:
@@ -2012,8 +1931,8 @@ def _test_github() -> bool:
     try:
         import requests  # type: ignore
         token = CONFIG.get("github_token", "")
-        if not token or token.startswith("ghp_YOUR"):
-            PREFLIGHT_RESULTS["GitHub API"] = {"ok": False, "detail": "Token not configured"}
+        if not token or "YOUR_TOKEN" in token:
+            PREFLIGHT_RESULTS["GitHub API"] = {"ok": False, "detail": "No token configured"}
             return False
         resp = requests.get(
             "https://api.github.com/user",
@@ -2021,7 +1940,7 @@ def _test_github() -> bool:
             timeout=10,
         )
         ok = resp.status_code == 200
-        PREFLIGHT_RESULTS["GitHub API"] = {"ok": ok}
+        PREFLIGHT_RESULTS["GitHub API"] = {"ok": ok, "status": resp.status_code}
         return ok
     except Exception as exc:
         PREFLIGHT_RESULTS["GitHub API"] = {"ok": False, "detail": str(exc)}
@@ -2031,7 +1950,6 @@ def _test_github() -> bool:
 # ─── STARTUP BANNER ──────────────────────────────────────────────────────────
 
 def print_banner() -> None:
-    mode_str = CURRENT_MODE.upper()
     name = CONFIG.get("assistant_name", "Scarlett")
     model = CONFIG.get("xai_model", "grok-3-fast")
     api_key = _mask(CONFIG.get("xai_api_key", ""))
@@ -2040,7 +1958,9 @@ def print_banner() -> None:
     autonomy = CONFIG.get("autonomy_mode", True)
 
     print("\n" + "╔" + "═" * 58 + "╗")
-    print(f"║  🔥  {name} v{VERSION} — {mode_str} MODE  ".ljust(59) + "║")
+    print(f"║  💎  {name} v{VERSION} — HYBRID  ".ljust(59) + "║")
+    print("╠" + "═" * 58 + "╣")
+    print(f"║  One persona. Honest. Capable. Always on.             ║")
     print("╠" + "═" * 58 + "╣")
     print(f"║  Model      : {model:<43}║")
     print(f"║  API Key    : {api_key:<43}║")
@@ -2050,8 +1970,7 @@ def print_banner() -> None:
     print(f"║  Log file   : {str(LOG_FILE):<43}║")
     print(f"║  Memory     : {str(MEMORY_FILE):<43}║")
     print("╠" + "═" * 58 + "╣")
-    print("║  Commands: 'be a lady' / 'be a tramp' / 'status'   ║")
-    print("║            'clear' / 'quit'                         ║")
+    print("║  Commands: 'status' / 'clear' / 'who are you' / 'quit'║")
     print("╚" + "═" * 58 + "╝\n")
 
 
@@ -2101,10 +2020,6 @@ def call_xai_api(
 
 # ─── AGENTIC CHAT LOOP ────────────────────────────────────────────────────────
 
-def get_system_prompt() -> str:
-    return LADY_PROMPT if CURRENT_MODE == "lady" else TRAMP_PROMPT
-
-
 def chat(user_input: str) -> str:
     """
     Single agentic turn: send user message, handle tool calls in a loop,
@@ -2113,9 +2028,7 @@ def chat(user_input: str) -> str:
     global CONVERSATION
 
     CONVERSATION.append({"role": "user", "content": user_input})
-
-    # Build messages for API (system + recent conversation)
-    messages = [{"role": "system", "content": get_system_prompt()}] + CONVERSATION[-50:]
+    messages = [{"role": "system", "content": SCARLETT_PROMPT}] + CONVERSATION[-50:]
 
     max_iterations = int(CONFIG.get("max_tool_iterations", 20))
     iteration = 0
@@ -2134,17 +2047,14 @@ def chat(user_input: str) -> str:
         message = choice.get("message", {})
         finish_reason = choice.get("finish_reason", "stop")
 
-        # Accumulate assistant message (even if it has tool calls)
         messages.append(message)
 
-        # No tool calls → we're done
         if finish_reason == "stop" or not message.get("tool_calls"):
             content = message.get("content") or ""
             CONVERSATION.append({"role": "assistant", "content": content})
             save_memory()
             return content
 
-        # Execute all tool calls
         tool_calls = message.get("tool_calls", [])
         for tc in tool_calls:
             fn_name = tc["function"]["name"]
@@ -2163,7 +2073,6 @@ def chat(user_input: str) -> str:
                 "content": result_str,
             })
 
-    # Fallback if max iterations hit
     fallback = "I've reached the maximum tool iteration limit. Here's what I was working on — please let me know how to continue."
     CONVERSATION.append({"role": "assistant", "content": fallback})
     save_memory()
@@ -2173,22 +2082,16 @@ def chat(user_input: str) -> str:
 # ─── SPECIAL COMMANDS ────────────────────────────────────────────────────────
 
 def handle_special_command(cmd: str) -> Optional[str]:
-    """
-    Handle special REPL commands. Returns response string or None if not special.
-    """
-    global CURRENT_MODE, CONVERSATION
+    """Handle special REPL commands. Returns response string or None if not special."""
+    global CONVERSATION
 
     lower = cmd.strip().lower()
 
-    if lower in ("be a lady", "switch to lady", "lady mode"):
-        CURRENT_MODE = "lady"
-        save_memory()
-        return "Switching to LADY MODE. Professional and decisive — let's get to work."
-
-    if lower in ("be a tramp", "switch to tramp", "tramp mode"):
-        CURRENT_MODE = "tramp"
-        save_memory()
-        return "Switching to TRAMP MODE. Oh yeah, now we're having FUN while getting things done! 🔥"
+    if lower in ("who are you", "who are you?", "identify yourself"):
+        return (
+            "I'm Scarlett — one unified AI assistant. No modes, no masks, no performance. "
+            "Just me: honest, capable, and fully autonomous. What do you need done?"
+        )
 
     if lower == "status":
         status = get_system_status()
@@ -2201,7 +2104,7 @@ def handle_special_command(cmd: str) -> Optional[str]:
 
     if lower in ("quit", "exit", "bye"):
         save_memory()
-        print(f"\nScarlett: Goodbye! Everything has been logged to {LOG_FILE}.\n")
+        print(f"\nScarlett: Saved and signing off. Bye! 👋\n")
         sys.exit(0)
 
     return None
@@ -2221,36 +2124,28 @@ def validate_config(cfg: Dict[str, Any]) -> List[str]:
 
 
 def main() -> None:
-    global CONFIG, MEMORY, CURRENT_MODE
+    global CONFIG, MEMORY
 
-    # ── Load config ──
     CONFIG = load_config()
     issues = validate_config(CONFIG)
     if issues:
         print("\n⚠️  Config issues:")
         for iss in issues:
             print(f"   - {iss}")
-        print(f"\nEdit your config file and re-run.\n")
+        print("\nEdit your config file and re-run.\n")
         sys.exit(1)
 
-    # ── Load memory ──
     MEMORY = load_memory()
-    CURRENT_MODE = MEMORY.get("mode", CONFIG.get("default_mode", "lady"))
 
-    # Restore conversation history
     global CONVERSATION
     CONVERSATION = MEMORY.get("conversation", [])
 
-    # ── Preflight ──
     run_preflight()
-
-    # ── Banner ──
     print_banner()
 
     name = CONFIG.get("assistant_name", "Scarlett")
-    print(f"  {name} is ready. Type your command or 'quit' to exit.\n")
+    print(f"  {name} (Hybrid) is ready. Type your command or 'quit' to exit.\n")
 
-    # ── REPL ──
     while True:
         try:
             user_input = input("You: ").strip()
@@ -2262,14 +2157,12 @@ def main() -> None:
         if not user_input:
             continue
 
-        # Special commands first
         special = handle_special_command(user_input)
         if special is not None:
-            print(f"\n{name} [{CURRENT_MODE.upper()}]: {special}\n")
+            print(f"\n{name}: {special}\n")
             continue
 
-        # Regular AI turn
-        print(f"\n{name} [{CURRENT_MODE.upper()}]: ", end="", flush=True)
+        print(f"\n{name}: ", end="", flush=True)
         response = chat(user_input)
         print(response + "\n")
 
