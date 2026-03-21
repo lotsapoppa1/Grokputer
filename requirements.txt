@@ -1,0 +1,28 @@
+# Scarlett / Grokputer - Python dependencies
+# Install with: pip install -r requirements.txt
+
+# Core HTTP & API
+requests>=2.31.0
+
+# Optional but recommended - install for full functionality:
+
+# PDF handling (at least one required for PDF tools)
+pypdf>=3.0.0
+pdfplumber>=0.10.0
+
+# Web scraping & HTML parsing
+beautifulsoup4>=4.12.0
+
+# Screenshots & OCR
+Pillow>=10.0.0
+pytesseract>=0.3.10
+
+# Browser automation
+selenium>=4.15.0
+
+# System monitoring
+psutil>=5.9.0
+
+# Vector memory (optional - for semantic memory enhancement)
+# chromadb>=0.4.0
+# sentence-transformers>=2.2.0
