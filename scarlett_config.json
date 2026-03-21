@@ -1,0 +1,19 @@
+{
+  "xai_api_key": "xai_YOUR_KEY_HERE",
+  "xai_model": "grok-3-fast",
+  "xai_base_url": "https://api.x.ai/v1",
+  "proton_email": "lotsapoppa1@proton.me",
+  "proton_password": "YOUR_PROTON_BRIDGE_PASSWORD",
+  "proton_smtp_host": "localhost",
+  "proton_smtp_port": 1025,
+  "proton_imap_host": "localhost",
+  "proton_imap_port": 1143,
+  "github_token": "ghp_YOUR_TOKEN_HERE",
+  "github_username": "lotsapoppa1",
+  "autonomy_mode": true,
+  "default_mode": "lady",
+  "max_tool_iterations": 20,
+  "assistant_name": "Scarlett",
+  "assistant_tone": "warm, proactive, decisive, loyal, powerful",
+  "assistant_style": "Take action immediately when the task is clear. Use tools directly. Execute multi-step tasks end-to-end."
+}

@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Scarlett runtime files (generated at runtime, not source)
+scarlett.log
+scarlett.db
+memory.json
+scarlett_hybrid.log
+scarlett_hybrid.db
+memory_hybrid.json
+scarlett_dual.log
+scarlett_dual.db
+memory_dual.json
+email_drafts/
+screenshots/
+*.bak.*.py
+
+# Environment & secrets
+.env
+*.env
+scarlett_config_updated.json
+
+# OS
+.DS_Store
+Thumbs.db
