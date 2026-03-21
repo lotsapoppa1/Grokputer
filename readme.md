@@ -5,24 +5,24 @@ Pick the personality layer that suits your workflow.
 
 ## Scripts
 
-### `grokputer_main.py` — Version A (Original)
+### `scarlett1.0.py` — Version 1.0 (Hybrid / Smallest)
+Single unified Scarlett persona — honest, direct, no mode switching.
+One identity, full autonomy, same 34 tools. Simpler and clean.
+
+Commands: `who are you` · `status` · `clear` · `quit`
+
+### `scarlett2.0.py` — Version 2.0 (Original / Medium)
 The original powerhouse. Built from the script you provided at the start of
 this project. LADY / TRAMP mode switching, full preflight, agentic tool loop,
 memory persistence, structured logging.
 
 > **Note — your original file:** The Python script you shared at the beginning
 > (the one whose name ended in something like `2.4` or `24`) was used as the
-> blueprint for `grokputer_main.py`. Its content lives here — the filename was
+> blueprint for this script. Its content lives here — the filename was
 > not preserved when it was committed. Everything from that file is in
-> `grokputer_main.py`.
+> `scarlett2.0.py`.
 
-### `grokputer_hybrid.py` — Version B (Hybrid)
-Single unified Scarlett persona — honest, direct, no mode switching.
-One identity, full autonomy, same 34 tools. Simpler and clean.
-
-Commands: `who are you` · `status` · `clear` · `quit`
-
-### `grokputer_dual_personality.py` — Version C (Dual Personality)
+### `scarlett3.0.py` — Version 3.0 (Dual Personality / Most Powerful)
 Two fully realised personalities in one body. LADY MODE: polished,
 precise, elegant. TRAMP MODE: wild, magnetic, full throttle.
 Same tools and power — radically different energy. Switch at will.
@@ -40,8 +40,7 @@ Two ways to get them locally:
 2. In the top bar click **Current Branch** → find and select
    `copilot/build-ultimate-scarlett-powerhouse`
 3. Click **Fetch origin** (top right) — then **Pull origin** if it appears
-4. Your local folder now has `grokputer_hybrid.py` and
-   `grokputer_dual_personality.py` alongside the original `grokputer_main.py`
+4. Your local folder now has all three renamed Scarlett scripts
 
 ### Option 2 — Merge the PR on GitHub first, then pull main
 1. Go to [github.com/lotsapoppa1/Grokputer/pulls](https://github.com/lotsapoppa1/Grokputer/pulls)
@@ -53,9 +52,9 @@ Two ways to get them locally:
 ### Verifying the files are there
 After pulling, open the repo folder in Explorer/Finder and confirm you see:
 ```
-grokputer_main.py              ← Version A (original)
-grokputer_hybrid.py            ← Version B (single persona)
-grokputer_dual_personality.py  ← Version C (dual personality)
+scarlett1.0.py                 ← Version 1.0 (single persona / smallest)
+scarlett2.0.py                 ← Version 2.0 (LADY+TRAMP / medium)
+scarlett3.0.py                 ← Version 3.0 (dual personality / most powerful)
 scarlett_config.json           ← fill this in with your keys
 ```
 
@@ -66,9 +65,9 @@ scarlett_config.json           ← fill this in with your keys
 cp scarlett_config.json scarlett_config_updated.json
 
 # run whichever version you want
-python grokputer_main.py
-python grokputer_hybrid.py
-python grokputer_dual_personality.py
+python scarlett1.0.py
+python scarlett2.0.py
+python scarlett3.0.py
 ```
 
 ## Tools (all three scripts)
