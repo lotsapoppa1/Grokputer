@@ -6,8 +6,15 @@ Pick the personality layer that suits your workflow.
 ## Scripts
 
 ### `grokputer_main.py` — Version A (Original)
-The original powerhouse. LADY / TRAMP mode switching, full preflight,
-agentic tool loop, memory persistence, structured logging.
+The original powerhouse. Built from the script you provided at the start of
+this project. LADY / TRAMP mode switching, full preflight, agentic tool loop,
+memory persistence, structured logging.
+
+> **Note — your original file:** The Python script you shared at the beginning
+> (the one whose name ended in something like `2.4` or `24`) was used as the
+> blueprint for `grokputer_main.py`. Its content lives here — the filename was
+> not preserved when it was committed. Everything from that file is in
+> `grokputer_main.py`.
 
 ### `grokputer_hybrid.py` — Version B (Hybrid)
 Single unified Scarlett persona — honest, direct, no mode switching.
